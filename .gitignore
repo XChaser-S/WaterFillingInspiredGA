@@ -1,0 +1,6 @@
+__pycache__
+*.pyc
+/examples
+/.travis.yml
+readme.md
+/requirments.txt
