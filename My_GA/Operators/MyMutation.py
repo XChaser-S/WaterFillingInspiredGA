@@ -1,16 +1,15 @@
 import copy
-
 from GA.GAOperators.Operators import Mutation
-from My_GA.Population.SeqReaIndividual import SeqReaIndividual
+from My_GA.Population.SeqReaIndividual import SeqIndividual
 from My_GA.util.HyperParameter import ParameterManager
-from My_GA.Population.SeqReaIndividual import gray2decimal, decimal2gray
+from My_GA.util.util import power_adjustment, gray2decimal, decimal2gray
 import numpy as np
 
 
 class MyMutation(Mutation):
     def __init__(self, rate, para_manager: ParameterManager):
         super().__init__(rate)
-        self._individual_class = [SeqReaIndividual]
+        self._individual_class = [SeqIndividual]
         self.para_manager = para_manager
         self.mutation_num = 0
 
@@ -19,7 +18,7 @@ class MyMutation(Mutation):
         return self._individual_class
 
     @staticmethod
-    def mutate_individual(individual: SeqReaIndividual, positions, alpha):
+    def mutate_individual(individual: SeqIndividual, positions, alpha):
         '''
         get mutated solution based on the selected individual:
             - individual: the selected individual
@@ -27,14 +26,18 @@ class MyMutation(Mutation):
             - alpha: additional param
             - return: the mutated solution
         '''
+        # 设计掩膜
         solution = individual.solution.copy()
         seq_pos_mask = positions[0][:individual.dimension[0] * individual.num_bit]
-        real_pos_mask = positions[0][-individual.dimension[1]:]
-        seq_pos = positions[1]
+        seq_pos_p_mask = positions[0][-individual.dimension[1] * individual.power_bit:]
+        seq_pos_index = positions[1]
+        seq_pos_p_index = positions[2]-(individual.dimension[0] * individual.num_bit)
 
+        # 取反
         solution[0][seq_pos_mask] = ((~solution[0][seq_pos_mask].astype(np.int32)) + 2).astype(np.str_)
+        solution[1][seq_pos_p_mask] = ((~solution[1][seq_pos_p_mask].astype(np.int32)) + 2).astype(np.str_)
         # fix the illegal mutation
-        for pos in (seq_pos / individual.num_bit).astype(np.int32):
+        for pos in (seq_pos_index / individual.num_bit).astype(np.int32):
             # PL_index = ''
             # for i in solution[0][pos*individual.num_bit:(pos+1)*individual.num_bit]:
             #     PL_index += i
@@ -47,11 +50,21 @@ class MyMutation(Mutation):
                 #     list(bin(individual.para_manager.NumPL)[2:].zfill(individual.num_bit))
                 # if decimal2gray(individual.para_manager.NumPL, individual.num_bit) == '111':
                 #     print(pos)
+                PL_index = np.random.choice(individual.para_manager.NumPL)+1
                 solution[0][pos * individual.num_bit:(pos + 1) * individual.num_bit] = \
-                    list(decimal2gray(individual.para_manager.NumPL, individual.num_bit))
+                    list(decimal2gray(PL_index, individual.num_bit))
 
-        real_mutation = np.random.random(len(solution[1][real_pos_mask]))
-        solution[1][real_pos_mask] = real_mutation
+        for pos in (seq_pos_p_index / individual.power_bit).astype(np.int32):
+            power_level = gray2decimal(solution[1][pos*individual.power_bit:(pos+1)*individual.power_bit])
+            if power_level > individual.para_manager.PowerLevels:
+                # solution[0][pos * individual.num_bit:(pos + 1) * individual.num_bit] = \
+                #     list(bin(individual.para_manager.NumPL)[2:].zfill(individual.num_bit))
+                # if decimal2gray(individual.para_manager.NumPL, individual.num_bit) == '111':
+                #     print(pos)
+                power_level = np.random.choice(individual.para_manager.PowerLevels)+1
+                solution[1][pos * individual.power_bit:(pos + 1) * individual.power_bit] = \
+                    list(decimal2gray(power_level, individual.power_bit))
+        power_adjustment(individual)
 
         return copy.deepcopy(solution)
 
@@ -62,6 +75,8 @@ class MyMutation(Mutation):
         fitness = [I.fitness for I in population.individuals]
         fit_max, fit_avg = np.max(fitness), np.mean(fitness)
         fit = individual.fitness
+        # if fit_max < 0:
+        #     return self._rate[1]
         if fit_max - fit_avg:
             return self._rate[1] if fit < fit_avg else self._rate[1] - (self._rate[1] - self._rate[0]) * (
                         fit_max - fit) / (fit_max - fit_avg)
@@ -70,12 +85,15 @@ class MyMutation(Mutation):
 
     def _mutate_positions(self, dimension):
         '''select num positions from dimension to mutate'''
-        num = np.random.randint(dimension[0]*self.para_manager.SeqBit+dimension[1]) + 1
-        pos = np.random.choice(dimension[0]*self.para_manager.SeqBit+dimension[1], num, replace=False)
-        positions = np.zeros(dimension[0]*self.para_manager.SeqBit+dimension[1]).astype(np.bool_)
+        num = np.random.randint(dimension[0] * self.para_manager.SeqBitC + dimension[1] * self.para_manager.SeqBitP) + 1
+        pos = np.random.choice(dimension[0] * self.para_manager.SeqBitC + dimension[1] * self.para_manager.SeqBitP,
+                               num, replace=False)
+        positions = np.zeros(dimension[0] * self.para_manager.SeqBitC +
+                             dimension[1] * self.para_manager.SeqBitP).astype(np.bool_)
         positions[pos] = True
-        seq_pos_i = np.where(pos<dimension[0]*self.para_manager.SeqBit)
-        return positions, pos[seq_pos_i].copy()
+        seq_pos_i = np.where(pos < dimension[0] * self.para_manager.SeqBitC)
+        seq_pos_p_i = np.where(pos >= dimension[0] * self.para_manager.SeqBitC)
+        return positions, pos[seq_pos_i].copy(), pos[seq_pos_p_i].copy()
 
     def mutate(self, population, alpha=None):
         '''

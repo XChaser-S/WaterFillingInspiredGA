@@ -2,9 +2,8 @@ import copy
 import time
 import pandas as pd
 import numpy as np
-
 from GA.GAProcess import GA
-from My_GA.Population.SeqReaIndividual import SeqReaIndividual
+from My_GA.Population.SeqReaIndividual import SeqIndividual
 from My_GA.Population.MyPopulation import MyPopulation
 from My_GA.util.HyperParameter import ParameterManager
 from My_GA.Operators.MySelection import LinearRankingSelection
@@ -18,6 +17,7 @@ class MyGA(GA):
 
         # initialize population
         self.population.initialize()
+        self.population.preserve_elitism()
 
         # solving process
         for n in tqdm(range(1, gen + 1), position=0, leave=True):
@@ -45,7 +45,7 @@ class MyGA(GA):
 
 if __name__=='__main__':
     para_manager = ParameterManager()
-    I = SeqReaIndividual(para_manager.NumPL+1, [para_manager.NumChannel, para_manager.NumChannel], para_manager)
+    I = SeqIndividual([para_manager.NumPL+1, para_manager.PowerLevels], [para_manager.NumChannel, para_manager.NumChannel], para_manager)
     P = MyPopulation(I, para_manager.PopulationSize, para_manager.PreservationSize, para_manager)
     LRS = LinearRankingSelection()
     C = MyCrossover([para_manager.AdaptiveMinQc, para_manager.AdaptiveMaxQc], para_manager)

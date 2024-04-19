@@ -2,12 +2,12 @@ import copy
 
 from GA.GAPopulation.Population import Population
 from My_GA.util.HyperParameter import ParameterManager
-from My_GA.Population.SeqReaIndividual import SeqReaIndividual
+from My_GA.Population.SeqReaIndividual import SeqIndividual
 import numpy as np
 
 
 class MyPopulation(Population):
-    def __init__(self, individual: SeqReaIndividual, size, preservation_size, para_manager: ParameterManager):
+    def __init__(self, individual: SeqIndividual, size, preservation_size, para_manager: ParameterManager):
         super().__init__(individual, size)
         self.preservation_individuals = []
         self.preservation_size = preservation_size

@@ -1,6 +1,7 @@
 import copy
-from My_GA.Population.SeqReaIndividual import SeqReaIndividual
+from My_GA.Population.SeqReaIndividual import SeqIndividual
 from GA.GAOperators.Operators import Crossover
+from My_GA.util.util import power_adjustment
 import numpy as np
 
 
@@ -8,7 +9,7 @@ class MyCrossover(Crossover):
     def __init__(self, rate, para_manager, alpha=None):
         super().__init__(rate, alpha)
         self.para_manager = para_manager
-        self._individual_class = [SeqReaIndividual]
+        self._individual_class = [SeqIndividual]
         self.cross_num = 0
 
     @staticmethod
@@ -22,7 +23,7 @@ class MyCrossover(Crossover):
         '''
         # 二进制和实数交叉
         seq_pos = pos[:individual_a.dimension[0]]
-        real_pos = pos[-individual_a.dimension[0]:]
+        seq_pos_p = pos[-individual_a.dimension[0]:]
         solution_a = individual_a.solution.copy()
         solution_b = individual_b.solution.copy()
 
@@ -33,12 +34,15 @@ class MyCrossover(Crossover):
         solution_a[0][seq_pos_nbits] = solution_b[0][seq_pos_nbits].copy()
         solution_b[0][seq_pos_nbits] = seq_temp
 
-        real_exchange_a = solution_a[1][real_pos].copy()
-        real_exchange_b = solution_b[1][real_pos].copy()
-        rand_a = np.random.random()
-        rand_b = np.random.random()
-        solution_a[1][real_pos] = rand_a*real_exchange_a + (1-rand_a)*real_exchange_b
-        solution_b[1][real_pos] = rand_b*real_exchange_b + (1-rand_b)*real_exchange_a
+        seq_pos_p = np.reshape(seq_pos_p, (len(seq_pos_p), 1))
+        seq_pos_p_nbits = np.reshape(np.concatenate([seq_pos_p] * individual_a.power_bit, axis=1),
+                                   individual_a.dimension[0] * individual_a.power_bit)
+        seq_p_temp = solution_a[1][seq_pos_p_nbits].copy()
+        solution_a[1][seq_pos_p_nbits] = solution_b[1][seq_pos_p_nbits].copy()
+        solution_b[1][seq_pos_p_nbits] = seq_p_temp
+
+        power_adjustment(individual_a)
+        power_adjustment(individual_b)
 
         # return new individuals
         new_individual_a = individual_a.__class__(individual_a.ranges, individual_a.dimension, individual_a.para_manager)
@@ -52,6 +56,27 @@ class MyCrossover(Crossover):
         new_individual_b.fitness = copy.deepcopy(new_individual_b.evaluation)
 
         return new_individual_a, new_individual_b
+
+    def _adaptive_rate(self, individual_a, individual_b, population):
+        '''
+        get the adaptive rate when cross over two individuals:
+        if f<f_avg  then rate = range_max,
+        if f>=f_avg then rate = range_max-(range_max-range_min)*(f-f_avg)/(f_max-f_avg),
+        where f=max(individual_a, individual_b)
+        '''
+        if not isinstance(self._rate, (list, tuple)):
+            return self._rate
+
+        fitness = [I.fitness for I in population.individuals]
+        fit_max, fit_avg = np.max(fitness), np.mean(fitness)
+        fit = max(individual_a.fitness, individual_b.fitness)
+        # if fit_max < 0:
+        #     return self._rate[1]
+        if fit_max - fit_avg:
+            return self._rate[1] if fit < fit_avg else self._rate[1] - (self._rate[1] - self._rate[0]) * (
+                        fit - fit_avg) / (fit_max - fit_avg)
+        else:
+            return (self._rate[0] + self._rate[1]) / 2.0
 
     @staticmethod
     def _cross_positions(dimension):

@@ -24,18 +24,21 @@ class ParameterManager:
         self.random_data_seed = 1629
         self.random_channel_seed = 1562
 
-        self.PopulationSize = 400
-        self.MaxGeneration = 800
-        self.PreservationSize = 6
+        self.PopulationSize = 300
+        self.MaxGeneration = 600
+        self.PreservationSize = 4
 
         self.AdaptiveMaxQc = 0.9
-        self.AdaptiveMinQc = 0.8
-        self.AdaptiveMaxQm = 0.3
+        self.AdaptiveMinQc = 0.7
+        self.AdaptiveMaxQm = 0.1
         self.AdaptiveMinQm = 0.003
 
         self.NumPL = 4
-        self.SeqBit = self.get_SeqBit()
+        self.SeqBitC = self.get_SeqBit(self.NumPL)
         self.PowerMax = [2]*self.NumPL  # W
+        self.PowerLevels = 10
+        self.SeqBitP = self.get_SeqBit(self.PowerLevels)
+        self.PowerSpace = self.get_PowerSpace()
 
         self.NumChannel = 64
         self.beta = 2  # 10*(3e8/(4*np.pi*50e6))**2
@@ -54,9 +57,9 @@ class ParameterManager:
 
         self.eta = 0.8
 
-    def get_SeqBit(self):
+    def get_SeqBit(self, n):
         bit_num = 0
-        while 2**bit_num < self.NumPL+1:
+        while 2**bit_num < n+1:
             bit_num += 1
         return bit_num
 
@@ -79,3 +82,9 @@ class ParameterManager:
         csi = np.concatenate(csi_lst, axis=1)
         return csi
 
+    def get_PowerSpace(self):
+        space = np.zeros((self.NumPL, self.PowerLevels+1))
+        for i in range(self.NumPL):
+            space[i, :-1] = self.PowerMax[i]*np.arange(0, 1, 1/self.PowerLevels)
+        space[:, -1] = self.PowerMax
+        return space
