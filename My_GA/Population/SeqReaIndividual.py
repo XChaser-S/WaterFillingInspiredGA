@@ -23,10 +23,8 @@ class SeqIndividual(Individual):
         # ToDo: add time and energy cost attr
         self.energy = None
         self.time = None
-        for i in range(para_manager.NumPL):
-            self.assignment_channel_policy[f'PL{i+1}'] = []
-        self.assignment_power_policy = copy.deepcopy(self.assignment_channel_policy)
-        self.assignment_rate = copy.deepcopy(self.assignment_channel_policy)
+        self.assignment_power_policy = {}
+        self.assignment_rate = {}
         super().__init__(seq_ranges)
         self.fitness = copy.deepcopy(self.evaluation)
 
@@ -39,6 +37,7 @@ class SeqIndividual(Individual):
         power_adjustment(self)
 
     def init_sequence(self, sequence_ranges, sequence_dimensions):
+        # decimal_solution_channel = np.random.randint(1, sequence_ranges[0], sequence_dimensions[0])
         decimal_solution_channel = np.random.randint(0, sequence_ranges[0], sequence_dimensions[0])
         decimal_solution_power = np.random.randint(0, sequence_ranges[1], sequence_dimensions[1])
         seq_solution_channel = np.zeros(sequence_dimensions[0] * self.num_bit, np.str_)
@@ -64,6 +63,10 @@ class SeqIndividual(Individual):
         return real_solution
 
     def solution2assignment(self):
+        for i in range(self.para_manager.NumPL):
+            self.assignment_channel_policy[f'PL{i+1}'] = []
+        self.assignment_power_policy = copy.deepcopy(self.assignment_channel_policy)
+        self.assignment_rate = copy.deepcopy(self.assignment_channel_policy)
         # 遍历基因，获取子信道和功率分配情况，涉及到二进制解码和功率解码
         for channel_i in range(self._dimension[0]):
             # PL_index = ''
@@ -88,10 +91,6 @@ class SeqIndividual(Individual):
                 self.assignment_rate[PL].append(rate)
 
     def init_evaluation(self):
-        for i in range(self.para_manager.NumPL):
-            self.assignment_channel_policy[f'PL{i+1}'] = []
-        self.assignment_power_policy = copy.deepcopy(self.assignment_channel_policy)
-        self.assignment_rate = copy.deepcopy(self.assignment_channel_policy)
         self.solution2assignment()
         power_arr = np.zeros(self.para_manager.NumPL)
         rate_arr = np.zeros(self.para_manager.NumPL)

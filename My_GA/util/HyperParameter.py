@@ -25,15 +25,15 @@ class ParameterManager:
         self.random_channel_seed = 1562
 
         self.PopulationSize = 300
-        self.MaxGeneration = 600
+        self.MaxGeneration = 800  # 600
         self.PreservationSize = 4
 
         self.AdaptiveMaxQc = 0.9
         self.AdaptiveMinQc = 0.7
-        self.AdaptiveMaxQm = 0.1
+        self.AdaptiveMaxQm = 0.1  # 0.1 0.3
         self.AdaptiveMinQm = 0.003
 
-        self.NumPL = 4
+        self.NumPL = 8
         self.SeqBitC = self.get_SeqBit(self.NumPL)
         self.PowerMax = [2]*self.NumPL  # W
         self.PowerLevels = 10
@@ -48,7 +48,7 @@ class ParameterManager:
         self.PowerDecayFactor = 0.5
         self.CSI = self.get_CSI()
 
-        self.DTSyn = 20  # s
+        self.DTSyn = 15  # s 15 20
 
         self.DataSizeMin = 0.5  # Gbit(1024)
         self.DataSizeMax = 0.9  # Gbit
@@ -76,8 +76,10 @@ class ParameterManager:
         np.random.seed(self.random_channel_seed)
         for i in range(self.NumPL):
             channel_i = generate_rayleigh_channel_gain(self.NumChannel, self.NumPath)
+            # channel_i = apply_exponential_decay(channel_i, self.PowerDecayFactor)
+            # channel_i = total_channel_gain(self.beta * 1e-4 * channel_i**2)
             channel_i = apply_exponential_decay(channel_i, self.PowerDecayFactor)
-            channel_i = total_channel_gain(self.beta * 1e-4 * channel_i**2)
+            channel_i = total_channel_gain(self.beta * 1e-4 * channel_i)
             csi_lst.append(channel_i.reshape((len(channel_i), 1)))
         csi = np.concatenate(csi_lst, axis=1)
         return csi
