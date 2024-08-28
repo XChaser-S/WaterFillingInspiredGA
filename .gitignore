@@ -4,3 +4,7 @@ __pycache__
 /.travis.yml
 readme.md
 /requirments.txt
+*.txt
+*.npy
+/experiment_data
+/util/result_plot.py

@@ -2,6 +2,7 @@ import copy
 from My_GA.Population.SeqReaIndividual import SeqIndividual
 from GA.GAOperators.Operators import Crossover
 from My_GA.util.util import power_adjustment
+from UrgencyBasedAlloc_ConstrainedGA.util import power_adjustment_without_sort
 import numpy as np
 
 
@@ -43,6 +44,8 @@ class MyCrossover(Crossover):
 
         power_adjustment(individual_a)
         power_adjustment(individual_b)
+        # power_adjustment_without_sort(individual_a)
+        # power_adjustment_without_sort(individual_b)
 
         # return new individuals
         new_individual_a = individual_a.__class__(individual_a.ranges, individual_a.dimension, individual_a.para_manager)

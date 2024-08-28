@@ -25,7 +25,7 @@ class ParameterManager:
         self.random_channel_seed = 1562
 
         self.PopulationSize = 300
-        self.MaxGeneration = 800  # 600
+        self.MaxGeneration = 300  # 600
         self.PreservationSize = 4
 
         self.AdaptiveMaxQc = 0.9
@@ -48,7 +48,7 @@ class ParameterManager:
         self.PowerDecayFactor = 0.5
         self.CSI = self.get_CSI()
 
-        self.DTSyn = 15  # s 15 20
+        self.DTSyn = 10  # s 15 20
 
         self.DataSizeMin = 0.5  # Gbit(1024)
         self.DataSizeMax = 0.9  # Gbit

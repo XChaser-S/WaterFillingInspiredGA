@@ -20,7 +20,7 @@ class PowerIndividual(SeqIndividual):
         self._solution = np.zeros(seq_dimension*self.power_bit, np.str_)
         self._solution = self.init_sequence(seq_range, seq_dimension)
         # power_adjustment(self)
-        power_adjustment_without_sort(self)
+        # power_adjustment_without_sort(self)
 
     def init_sequence(self, sequence_ranges, sequence_dimensions):
         decimal_solution_power = np.random.randint(0, sequence_ranges, sequence_dimensions)
